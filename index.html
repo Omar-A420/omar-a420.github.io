@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kruskal's MST Visualizer</title>
+<style>
+:root{--bg:#0d1117;--panel:#161b22;--panel2:#1c2128;--border:#30363d;--text:#e6edf3;--muted:#8b949e;--accent:#58a6ff;--green:#3fb950;--red:#f85149;--yellow:#d29922;--purple:#bc8cff;--orange:#e3b341;--teal:#39d353;--mono:'Courier New',monospace;}
+*{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--text);font-family:'Segoe UI',system-ui,sans-serif;font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden;}
+header{background:var(--panel);border-bottom:1px solid var(--border);padding:7px 14px;display:flex;align-items:center;gap:8px;flex-shrink:0;}
+header h1{font-size:15px;color:var(--accent);white-space:nowrap;}
+.hdr-tabs{display:flex;gap:2px;margin-left:auto;flex-wrap:wrap;}
+.htab{padding:4px 11px;border-radius:4px;cursor:pointer;font-size:11px;color:var(--muted);border:1px solid transparent;transition:all .15s;}
+.htab:hover{color:var(--text);background:rgba(88,166,255,.08);}
+.htab.active{color:var(--accent);border-color:var(--accent);background:rgba(88,166,255,.1);}
+.app{display:flex;flex:1;overflow:hidden;}
+.left{width:350px;min-width:350px;background:var(--panel);border-right:1px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.right{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.sec{border-bottom:1px solid var(--border);padding:9px 11px;}
+.stitle{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);margin-bottom:6px;}
+textarea{width:100%;background:var(--bg);border:1px solid var(--border);color:var(--text);font-family:var(--mono);font-size:11px;padding:6px;border-radius:4px;resize:vertical;min-height:48px;}
+textarea:focus{outline:1px solid var(--accent);border-color:var(--accent);}
+.pgrid{display:grid;grid-template-columns:1fr 1fr;gap:4px;margin-top:5px;}
+.btn{background:var(--bg);border:1px solid var(--border);color:var(--text);padding:4px 8px;border-radius:4px;cursor:pointer;font-size:11px;transition:all .15s;white-space:nowrap;}
+.btn:hover{border-color:var(--accent);color:var(--accent);}
+.btn.pri{background:var(--accent);color:#000;border-color:var(--accent);font-weight:700;}
+.btn.pri:hover{background:#79bbff;}
+.btn.danger{border-color:var(--red);color:var(--red);}
+.btn.danger:hover{background:var(--red);color:#fff;}
+.btn.purple{border-color:var(--purple);color:var(--purple);}
+.playrow{display:flex;gap:4px;flex-wrap:wrap;}
+.playrow .btn{flex:1;text-align:center;min-width:48px;}
+.srow{display:flex;align-items:center;gap:7px;}
+input[type=range]{flex:1;accent-color:var(--accent);}
+.statrow{display:flex;gap:12px;margin-top:7px;}
+.slbl{font-size:10px;color:var(--muted);text-transform:uppercase;}
+.sval{font-size:14px;font-weight:700;color:var(--accent);}
+.ctrg{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.ctr{background:var(--bg);border:1px solid var(--border);border-radius:4px;padding:5px;text-align:center;}
+.clbl{font-size:9px;color:var(--muted);}
+.cval{font-size:17px;font-weight:700;color:var(--green);}
+.chips{display:flex;gap:4px;flex-wrap:wrap;padding:2px 0;}
+.chip{padding:2px 6px;border-radius:10px;font-size:10px;font-weight:700;border:1px solid var(--border);background:var(--bg);color:var(--text);font-family:var(--mono);transition:all .2s;}
+.chip.active{border-color:var(--yellow);color:var(--yellow);background:rgba(210,153,34,.1);}
+.chip.accepted{border-color:var(--green);color:var(--green);background:rgba(63,185,80,.1);}
+.chip.rejected{border-color:var(--red);color:var(--red);background:rgba(248,81,73,.1);}
+.page{display:none;flex:1;overflow:hidden;flex-direction:column;}
+.page.active{display:flex;}
+.viz-area{display:flex;flex:1;overflow:hidden;}
+.gwrap{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+#graph-svg{flex:1;width:100%;display:block;}
+.legend{display:flex;gap:10px;padding:5px 11px;background:var(--panel);border-top:1px solid var(--border);flex-wrap:wrap;}
+.li{display:flex;align-items:center;gap:4px;font-size:10px;color:var(--muted);}
+.ll{width:16px;height:3px;border-radius:2px;}
+.ld{width:10px;height:10px;border-radius:50%;}
+.cpanel{width:255px;min-width:255px;background:var(--panel);border-left:1px solid var(--border);display:flex;flex-direction:column;overflow:hidden;}
+.pcode{flex:1;overflow-y:auto;padding:3px 9px 9px;font-family:var(--mono);font-size:11px;line-height:1.9;}
+.cl{display:flex;align-items:flex-start;gap:6px;padding:1px 4px;border-radius:3px;cursor:default;transition:background .15s;position:relative;}
+.cl:hover{background:rgba(88,166,255,.07);}
+.cl.active{background:rgba(210,153,34,.2);border-left:3px solid var(--yellow);}
+.ln{color:var(--muted);min-width:16px;user-select:none;font-size:10px;}
+.lc{color:var(--text);white-space:pre;}
+.tip{display:none;position:absolute;left:102%;top:0;background:#1c2128;border:1px solid var(--border);border-radius:4px;padding:5px 9px;font-size:11px;color:var(--text);z-index:100;min-width:175px;max-width:210px;white-space:normal;font-family:'Segoe UI',sans-serif;}
+.cl:hover .tip{display:block;}
+.bottom{height:200px;min-height:200px;display:flex;border-top:1px solid var(--border);overflow:hidden;}
+.btabs{display:flex;border-bottom:1px solid var(--border);background:var(--panel);}
+.btab{padding:6px 11px;font-size:11px;cursor:pointer;color:var(--muted);border-bottom:2px solid transparent;}
+.btab.active{color:var(--accent);border-bottom-color:var(--accent);}
+.bpane{display:none;flex:1;overflow-y:auto;padding:7px 11px;}
+.bpane.active{display:block;}
+.sbox{flex:1;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;border-right:1px solid var(--border);}
+.hpanel{width:340px;background:var(--panel);display:flex;flex-direction:column;overflow:hidden;}
+.hlbl{padding:7px 9px 3px;font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em;}
+#hwrap{flex:1;overflow-y:auto;}
+#htbl{width:100%;border-collapse:collapse;font-size:11px;}
+#htbl th{background:var(--bg);color:var(--muted);padding:3px 6px;text-align:left;position:sticky;top:0;border-bottom:1px solid var(--border);}
+#htbl td{padding:3px 6px;border-bottom:1px solid rgba(48,54,61,.4);cursor:pointer;}
+#htbl tr:hover td{background:rgba(88,166,255,.07);}
+#htbl tr.cur td{background:rgba(210,153,34,.15);}
+td.ok{color:var(--green);}td.no{color:var(--red);}td.chk{color:var(--yellow);}
+.le{display:flex;gap:6px;align-items:flex-start;padding:3px 6px;border-radius:4px;font-size:11px;line-height:1.5;border:1px solid transparent;cursor:pointer;}
+.le:hover{background:rgba(88,166,255,.06);}
+.le.cur{background:rgba(210,153,34,.12);border-color:rgba(210,153,34,.3);}
+.le.lacc{border-left:3px solid var(--green);}
+.le.lrej{border-left:3px solid var(--red);}
+.le.linf{border-left:3px solid var(--accent);}
+.lnum{font-size:10px;color:var(--muted);min-width:18px;font-family:var(--mono);}
+.ltxt{color:var(--text);flex:1;}
+/* CLO PAGES */
+.cpg{flex:1;overflow-y:auto;padding:14px 18px;display:flex;flex-direction:column;gap:14px;}
+.chdr{display:flex;align-items:center;gap:10px;padding-bottom:10px;border-bottom:1px solid var(--border);}
+.cbadge{padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.b1{background:rgba(88,166,255,.15);color:var(--accent);border:1px solid var(--accent);}
+.b2{background:rgba(63,185,80,.15);color:var(--green);border:1px solid var(--green);}
+.b3{background:rgba(188,140,255,.15);color:var(--purple);border:1px solid var(--purple);}
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}
+.cgrid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;}
+.ibox{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:10px 12px;}
+.ibox h4{font-size:11px;color:var(--accent);margin-bottom:5px;}
+.ibox.g h4{color:var(--green);}
+.ibox.r h4{color:var(--red);}
+.ibox.y h4{color:var(--yellow);}
+.ibox.p h4{color:var(--purple);}
+.ibox p,.ibox li{font-size:11px;color:var(--muted);line-height:1.7;}
+.ibox ul{padding-left:14px;}
+.ct{width:100%;border-collapse:collapse;font-size:11px;}
+.ct th,.ct td{border:1px solid var(--border);padding:4px 8px;}
+.ct th{background:var(--bg);color:var(--accent);}
+.ct td{color:var(--muted);}
+.hi{color:var(--green);font-weight:700;}
+.cwrap{background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:10px 12px;}
+.cwrap h4{font-size:11px;color:var(--orange);margin-bottom:7px;}
+.cctrl{display:flex;gap:7px;align-items:center;margin-bottom:7px;flex-wrap:wrap;}
+.cctrl label{font-size:10px;color:var(--muted);}
+.pdemo{display:flex;gap:10px;}
+.pl,.pr{flex:1;background:var(--panel);border:1px solid var(--border);border-radius:5px;padding:10px;}
+.pl h4{font-size:11px;color:var(--green);margin-bottom:6px;}
+.pr h4{font-size:11px;color:var(--red);margin-bottom:6px;}
+@media(max-width:980px){
+  .app{flex-direction:column;overflow-y:auto;}
+  .left{width:100%;min-width:0;border-right:none;border-bottom:1px solid var(--border);}
+  .cpanel{width:100%;min-width:0;border-left:none;border-top:1px solid var(--border);height:200px;}
+  .viz-area{flex-direction:column;}
+  .bottom{flex-direction:column;height:auto;}
+  .hpanel{width:100%;height:180px;}
+  #graph-svg{height:280px;}
+  .cgrid,.cgrid3{grid-template-columns:1fr;}
+  .pdemo{flex-direction:column;}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>⬡ Kruskal's MST Visualizer</h1>
+  <div class="hdr-tabs">
+    <div class="htab active" onclick="showPage('viz',this)">🎬 Visualizer</div>
+    <div class="htab" onclick="showPage('clo1',this)">📊 CLO-1: Complexity</div>
+    <div class="htab" onclick="showPage('clo2',this)">🔍 CLO-2: Sorting</div>
+    <div class="htab" onclick="showPage('clo3',this)">🧠 CLO-3: Greedy</div>
+    <div class="htab" onclick="showPage('learn',this)">📖 Learn</div>
+  </div>
+</header>
+
+<div class="app">
+<!-- LEFT -->
+<div class="left">
+  <div class="sec">
+    <div class="stitle">Custom Input</div>
+    <textarea id="ei" rows="3">A-B:4, B-C:2, A-C:6, B-D:5, C-D:3</textarea>
+    <div class="stitle" style="margin-top:8px">Presets</div>
+    <div class="pgrid" id="pgrid"></div>
+  </div>
+  <div class="sec">
+    <div class="stitle">🎲 Randomizer</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-bottom:6px">
+      <div><div style="font-size:10px;color:var(--muted)">Nodes: <span id="rnv" style="color:var(--accent)">5</span></div><input type="range" id="rn" min="3" max="10" value="5" style="width:100%"></div>
+      <div><div style="font-size:10px;color:var(--muted)">Density: <span id="rdv" style="color:var(--purple)">Med</span></div><input type="range" id="rd" min="1" max="3" value="2" style="width:100%;accent-color:var(--purple)"></div>
+    </div>
+    <div style="display:flex;gap:6px;align-items:flex-end">
+      <div style="flex:1"><div style="font-size:10px;color:var(--muted)">Weights: <span id="rwv" style="color:var(--orange)">1-20</span></div><input type="range" id="rw" min="1" max="3" value="2" style="width:100%;accent-color:var(--orange)"></div>
+      <button class="btn purple" onclick="doRandom()">🎲 Gen</button>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="stitle">Speed</div>
+    <div class="srow">
+      <span style="font-size:10px;color:var(--muted)">0.25×</span>
+      <input type="range" id="spd" min="1" max="16" value="4">
+      <span style="font-size:10px;color:var(--muted)">4×</span>
+      <span id="spdl" style="min-width:32px;color:var(--accent);font-weight:700;font-size:11px">1×</span>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="stitle">Playback</div>
+    <div class="playrow">
+      <button class="btn pri" onclick="doBuild()">Build Steps</button>
+      <button class="btn" onclick="doStep()">Step ▶</button>
+      <button class="btn" onclick="doPlay()">▶ Play</button>
+      <button class="btn" onclick="doPause()">⏸ Pause</button>
+      <button class="btn danger" onclick="doReset()">↺ Reset</button>
+    </div>
+    <div class="statrow">
+      <div><div class="slbl">Step</div><div class="sval" id="sctr">0 / 0</div></div>
+      <div><div class="slbl">Status</div><div class="sval" id="sstat" style="color:var(--muted)">Idle</div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="stitle">Live Counters</div>
+    <div class="ctrg">
+      <div class="ctr"><div class="clbl">Edges Sorted</div><div class="cval" id="cs">0</div></div>
+      <div class="ctr"><div class="clbl">Examined</div><div class="cval" id="ce">0</div></div>
+      <div class="ctr"><div class="clbl">MST Edges</div><div class="cval" id="cm">0</div></div>
+      <div class="ctr"><div class="clbl">UF Ops</div><div class="cval" id="cu">0</div></div>
+      <div class="ctr" style="grid-column:span 2"><div class="clbl">Total MST Weight</div><div class="cval" id="cw" style="color:var(--orange)">0</div></div>
+    </div>
+  </div>
+  <div class="sec">
+    <div class="stitle">Edge Queue (sorted)</div>
+    <div id="chips" class="chips"></div>
+  </div>
+</div>
+
+<!-- RIGHT -->
+<div class="right">
+
+<!-- VISUALIZER PAGE -->
+<div class="page active" id="page-viz">
+  <div class="viz-area">
+    <div class="gwrap">
+      <svg id="graph-svg" viewBox="0 0 620 370"></svg>
+      <div class="legend">
+        <div class="li"><div class="ll" style="background:#4a5568"></div>Unvisited</div>
+        <div class="li"><div class="ll" style="background:var(--yellow)"></div>Considering</div>
+        <div class="li"><div class="ll" style="background:var(--green)"></div>MST ✓</div>
+        <div class="li"><div class="ll" style="background:var(--red)"></div>Rejected ✗</div>
+        <div class="li"><div class="ld" style="background:#2d333b;border:2px solid var(--accent)"></div>Node</div>
+        <div class="li"><div class="ld" style="background:#1a3a2a;border:2px solid var(--green)"></div>In MST</div>
+      </div>
+    </div>
+    <div class="cpanel">
+      <div style="padding:7px 9px 3px;font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)">Pseudocode <span style="color:var(--muted);font-weight:400">(hover for tooltip)</span></div>
+      <div class="pcode" id="pcode"></div>
+    </div>
+  </div>
+  <div class="bottom">
+    <div class="sbox">
+      <div class="btabs">
+        <div class="btab active" onclick="bTab('log',this)">Step Log</div>
+        <div class="btab" onclick="bTab('uf',this)">Union-Find</div>
+        <div class="btab" onclick="bTab('sort',this)">Sort View</div>
+      </div>
+      <div id="bp-log" class="bpane active">
+        <div id="slog" style="display:flex;flex-direction:column;gap:3px"></div>
+        <p id="lempty" style="color:var(--muted);font-size:11px">Press <strong style="color:var(--accent)">Build Steps</strong> then <strong style="color:var(--accent)">Step</strong> or <strong style="color:var(--accent)">Play</strong>. Each step will accumulate here — nothing disappears.</p>
+      </div>
+      <div id="bp-uf" class="bpane">
+        <svg id="uf-svg" viewBox="0 0 480 120" style="width:100%;height:120px;display:block"></svg>
+        <p id="uftxt" style="font-size:10px;color:var(--muted);margin-top:3px">Green = root. Purple = non-root. Arrows = parent pointers (path compression flattens these).</p>
+      </div>
+      <div id="bp-sort" class="bpane">
+        <svg id="sort-svg" viewBox="0 0 480 95" style="width:100%;height:95px;display:block"></svg>
+        <p id="stxt" style="font-size:10px;color:var(--muted);margin-top:3px">Bars = edges sorted by weight. Yellow = currently being considered by the algorithm.</p>
+      </div>
+    </div>
+    <div class="hpanel">
+      <div class="hlbl">Step History <span style="font-weight:400">(click row to jump back)</span></div>
+      <div id="hwrap"><table id="htbl"><thead><tr><th>#</th><th>Edge</th><th>Wt</th><th>Find(u)</th><th>Find(v)</th><th>Result</th></tr></thead><tbody id="hbody"></tbody></table></div>
+    </div>
+  </div>
+</div>
+
+<!-- CLO-1 PAGE -->
+<div class="page" id="page-clo1">
+<div class="cpg">
+  <div class="chdr">
+    <span class="cbadge b1">CLO-1 — 10 marks</span>
+    <div><h2 style="font-size:15px;color:var(--accent)">Asymptotic Complexity Analysis</h2>
+    <p style="font-size:11px;color:var(--muted)">Time/space complexity, operation counters, growth curves, worst-case demo, Kruskal vs Prim comparison</p></div>
+  </div>
+
+  <div class="cgrid3">
+    <div class="ibox">
+      <h4>⏱ Time Complexity</h4>
+      <table class="ct">
+        <tr><th>Case</th><th>Complexity</th></tr>
+        <tr><td>Best</td><td class="hi">O(E log E)</td></tr>
+        <tr><td>Average</td><td class="hi">O(E log E)</td></tr>
+        <tr><td>Worst</td><td class="hi">O(E log E)</td></tr>
+      </table>
+      <p style="margin-top:7px">The sort step dominates. Union-Find with path compression + union by rank costs O(E·α(V)) where α(V) ≤ 4 for all practical inputs.</p>
+    </div>
+    <div class="ibox">
+      <h4>📦 Space Complexity</h4>
+      <table class="ct">
+        <tr><th>Structure</th><th>Space</th></tr>
+        <tr><td>Edge list</td><td>O(E)</td></tr>
+        <tr><td>UF parent[]</td><td>O(V)</td></tr>
+        <tr><td>UF rank[]</td><td>O(V)</td></tr>
+        <tr><td>MST result</td><td>O(V)</td></tr>
+        <tr><td><strong>Total</strong></td><td class="hi">O(V + E)</td></tr>
+      </table>
+    </div>
+    <div class="ibox y">
+      <h4>🔴 Worst Case Trigger</h4>
+      <p>Load <strong style="color:var(--text)">⚠ Worst Case preset</strong>: dense graph (E = V(V-1)/2), all distinct weights.</p>
+      <p style="margin-top:6px">Every edge must be sorted and examined. The sort step performs E·log(E) comparisons — the tight upper bound.</p>
+      <p style="margin-top:6px">The Live Counters in the left panel count every operation as it happens during animation.</p>
+    </div>
+  </div>
+
+  <div class="ibox">
+    <h4>📋 Full Operation Breakdown</h4>
+    <table class="ct">
+      <tr><th>Step</th><th>Operation</th><th>How Many</th><th>Cost Each</th><th>Total</th></tr>
+      <tr><td>1</td><td>Sort all edges</td><td>1 call</td><td>O(E log E)</td><td class="hi">O(E log E)</td></tr>
+      <tr><td>2</td><td>FIND(u) + FIND(v) per edge</td><td>2E calls</td><td>O(α(V)) ≈ O(1)</td><td>O(E·α(V))</td></tr>
+      <tr><td>3</td><td>UNION per accepted edge</td><td>≤ V–1 calls</td><td>O(α(V)) ≈ O(1)</td><td>O(V·α(V))</td></tr>
+      <tr><td colspan="4"><strong>Grand Total</strong></td><td class="hi">O(E log E)</td></tr>
+    </table>
+    <p style="margin-top:6px">α(V) = inverse Ackermann function. α(V) ≤ 4 for V up to 10<sup>80000</sup>. Union-Find is practically constant time.</p>
+  </div>
+
+  <div class="cwrap">
+    <h4>📈 Interactive Growth Curve — Operations vs Input Size</h4>
+    <div class="cctrl">
+      <label>Max V: <strong id="gcvl" style="color:var(--accent)">20</strong></label>
+      <input type="range" id="gcv" min="5" max="60" value="20" style="width:120px" oninput="document.getElementById('gcvl').textContent=this.value;drawGrowth()">
+      <label>Type:</label>
+      <select id="gct" onchange="drawGrowth()" style="background:var(--bg);border:1px solid var(--border);color:var(--text);padding:2px 6px;border-radius:4px;font-size:11px">
+        <option value="dense">Dense (E≈V²/2)</option>
+        <option value="sparse">Sparse (E≈V)</option>
+      </select>
+      <span style="font-size:11px;color:var(--muted)">Your run: <strong id="gcact" style="color:var(--teal)">run visualizer first</strong></span>
+    </div>
+    <svg id="gsvg" viewBox="0 0 680 210" style="width:100%;height:210px;display:block"></svg>
+    <div style="display:flex;gap:14px;margin-top:5px;flex-wrap:wrap">
+      <div class="li"><div class="ll" style="background:var(--green)"></div><span style="font-size:10px">Kruskal O(E log E)</span></div>
+      <div class="li"><div class="ll" style="background:var(--red)"></div><span style="font-size:10px">Prim O(V²) — dense</span></div>
+      <div class="li"><div class="ll" style="background:var(--yellow)"></div><span style="font-size:10px">Naïve (no sort) O(E²)</span></div>
+      <div class="li"><div class="ll" style="background:var(--teal);height:2px"></div><span style="font-size:10px">● Your actual run</span></div>
+    </div>
+  </div>
+
+  <div class="ibox">
+    <h4>⚖️ Kruskal vs Prim — Full Comparison</h4>
+    <table class="ct">
+      <tr><th>Property</th><th>Kruskal's</th><th>Prim's</th></tr>
+      <tr><td>Strategy</td><td>Edge-centric greedy</td><td>Vertex-centric greedy</td></tr>
+      <tr><td>Time (Adj Matrix)</td><td class="hi">O(E log E)</td><td>O(V²)</td></tr>
+      <tr><td>Time (Adj List + PQ)</td><td class="hi">O(E log E)</td><td>O(E log V)</td></tr>
+      <tr><td>Space</td><td>O(V+E)</td><td>O(V)</td></tr>
+      <tr><td>Best suited for</td><td>Sparse graphs</td><td>Dense graphs</td></tr>
+      <tr><td>Key data structure</td><td>Union-Find (DSU)</td><td>Priority Queue (min-heap)</td></tr>
+      <tr><td>Handles disconnected?</td><td style="color:var(--green)">✓ Finds MSF</td><td style="color:var(--red)">✗ Must be connected</td></tr>
+      <tr><td>Correctness basis</td><td colspan="2">Both use the Cut Property</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- CLO-2 PAGE -->
+<div class="page" id="page-clo2">
+<div class="cpg">
+  <div class="chdr">
+    <span class="cbadge b2">CLO-2 — 10 marks</span>
+    <div><h2 style="font-size:15px;color:var(--green)">Sorting &amp; Searching in Kruskal's</h2>
+    <p style="font-size:11px;color:var(--muted)">Role of sorting, Union-Find as search, impact analysis with visual comparison, all interactive controls</p></div>
+  </div>
+
+  <div class="cgrid">
+    <div class="ibox g">
+      <h4>📋 Why Sorting is Essential</h4>
+      <p>Kruskal's greedy strategy <strong style="color:var(--text)">requires</strong> edges in sorted order. The algorithm relies on always picking the current global minimum weight edge. If edges are unsorted:</p>
+      <ul style="margin-top:5px">
+        <li>We might pick a heavy edge when a lighter valid one exists</li>
+        <li>The greedy choice property breaks — local ≠ global optimal</li>
+        <li>We get a spanning tree, but <strong style="color:var(--red)">NOT the minimum one</strong></li>
+      </ul>
+      <p style="margin-top:5px">Sort cost: <strong style="color:var(--text)">O(E log E)</strong> — the algorithm's dominant step.</p>
+    </div>
+    <div class="ibox">
+      <h4>🔍 Union-Find as a Search Structure</h4>
+      <p>For each edge (u,v), we search: <em>"Are u and v already connected?"</em> This is the <strong style="color:var(--accent)">FIND</strong> operation.</p>
+      <ul style="margin-top:5px">
+        <li><strong style="color:var(--accent)">FIND(x)</strong>: Traverse the forest upward to find x's root (component representative)</li>
+        <li><strong style="color:var(--accent)">Path Compression</strong>: During FIND, point every visited node directly to the root — flattens the tree</li>
+        <li><strong style="color:var(--accent)">Union by Rank</strong>: When merging, attach the shorter tree under the taller — keeps depth O(log V)</li>
+        <li>Combined effect: each FIND/UNION ≈ O(1) amortized</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- Impact Analysis -->
+  <div class="cwrap">
+    <h4>⚡ Impact Analysis — Visual Comparison: WITH vs WITHOUT Sorting</h4>
+    <div class="cctrl">
+      <button class="btn" onclick="runImpact()" style="border-color:var(--orange);color:var(--orange)">▶ Run Demo</button>
+      <span id="imsg" style="font-size:11px;color:var(--muted)">Click to compare Kruskal's WITH and WITHOUT the sorting step on the same graph.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div>
+        <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:3px">✅ WITH Sorting (Correct MST)</div>
+        <svg id="ig" viewBox="0 0 280 185" style="width:100%;height:185px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block"></svg>
+        <div id="igwt" style="font-size:11px;color:var(--muted);margin-top:3px;text-align:center"></div>
+      </div>
+      <div>
+        <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:3px">❌ WITHOUT Sorting (Wrong result)</div>
+        <svg id="ib" viewBox="0 0 280 185" style="width:100%;height:185px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block"></svg>
+        <div id="ibwt" style="font-size:11px;color:var(--muted);margin-top:3px;text-align:center"></div>
+      </div>
+    </div>
+    <p id="iccl" style="font-size:11px;color:var(--muted);margin-top:8px;padding:7px;background:var(--panel2);border-radius:4px;border-left:3px solid var(--orange)">Conclusion will appear after running the demo.</p>
+  </div>
+
+  <div class="ibox y">
+    <h4>🔦 How the Sort Step is Highlighted in the Visualizer</h4>
+    <ul>
+      <li>Pseudocode line 5 (<code style="color:var(--yellow)">sort G.E by weight ↑</code>) highlights when the sort step executes</li>
+      <li>The <strong style="color:var(--text)">Edge Queue</strong> panel (left sidebar) shows all edges reordered lightest→heaviest</li>
+      <li>The current edge turns <strong style="color:var(--yellow)">yellow</strong> in both the graph SVG and the edge queue chips</li>
+      <li>The <strong style="color:var(--text)">Sort View tab</strong> (bottom panel) shows a bar chart — yellow bar = currently considered</li>
+      <li>The <strong style="color:var(--text)">Step Log</strong> records every decision with concrete FIND(u) and FIND(v) values</li>
+    </ul>
+  </div>
+
+  <div class="ibox">
+    <h4>🎮 All Interactive Controls</h4>
+    <table class="ct">
+      <tr><th>Control</th><th>Where</th><th>What it does</th></tr>
+      <tr><td>Build Steps</td><td>Left panel</td><td>Parses edges, sorts them, pre-computes all steps</td></tr>
+      <tr><td>Step ▶</td><td>Left panel</td><td>Advance one step — ideal for teaching line by line</td></tr>
+      <tr><td>▶ Play</td><td>Left panel</td><td>Auto-play animation at selected speed</td></tr>
+      <tr><td>⏸ Pause</td><td>Left panel</td><td>Pause auto-play at current step</td></tr>
+      <tr><td>↺ Reset</td><td>Left panel</td><td>Clear all state, return to Idle</td></tr>
+      <tr><td>Speed Slider</td><td>Left panel</td><td>0.25× to 4× playback speed</td></tr>
+      <tr><td>Custom Input</td><td>Left panel textarea</td><td>Type any graph: A-B:4, B-C:2, ...</td></tr>
+      <tr><td>10 Presets</td><td>Left panel grid</td><td>Pre-built graphs including Worst Case</td></tr>
+      <tr><td>🎲 Randomizer</td><td>Left panel</td><td>Generate random connected graphs with node/density/weight sliders</td></tr>
+      <tr><td>History Table</td><td>Bottom-right panel</td><td>Shows every step; click any row to jump back to it</td></tr>
+      <tr><td>Step Log</td><td>Bottom-left tab</td><td>Persistent log — steps accumulate and stay visible</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- CLO-3 PAGE -->
+<div class="page" id="page-clo3">
+<div class="cpg">
+  <div class="chdr">
+    <span class="cbadge b3">CLO-3 — 10 marks</span>
+    <div><h2 style="font-size:15px;color:var(--purple)">Design Paradigm: GREEDY</h2>
+    <p style="font-size:11px;color:var(--muted)">Greedy choices animated step-by-step, cut property visual proof, counterexample vs naïve greedy</p></div>
+  </div>
+
+  <div class="ibox p">
+    <h4>🏷️ Paradigm: GREEDY ALGORITHM</h4>
+    <p>Kruskal's is a <strong style="color:var(--text)">Greedy Algorithm</strong>. At every step it makes the <em>locally optimal choice</em>: pick the lightest edge that does not create a cycle. This local greediness leads to the <strong style="color:var(--text)">globally optimal MST</strong>, proven by the Cut Property theorem.</p>
+  </div>
+
+  <!-- Animated Greedy Demo -->
+  <div class="cwrap">
+    <h4>🎬 Animated Greedy Choices — Watch Each Decision</h4>
+    <div class="cctrl">
+      <button class="btn" onclick="runGreedy()" style="border-color:var(--green);color:var(--green)">▶ Animate Greedy Steps</button>
+      <button class="btn danger" onclick="resetGreedy()">↺ Reset</button>
+      <span id="gmsg" style="font-size:11px;color:var(--muted)">Click to animate each greedy choice with explanation.</span>
+    </div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:8px">
+      <div>
+        <svg id="gsvg2" viewBox="0 0 280 220" style="width:100%;height:220px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block"></svg>
+      </div>
+      <div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:4px">Greedy Decision Log:</div>
+        <div id="glog" style="display:flex;flex-direction:column;gap:3px;max-height:210px;overflow-y:auto"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Cut Property -->
+  <div class="cwrap">
+    <h4>✂️ The Cut Property — Why Greedy is Correct</h4>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+      <div>
+        <svg id="ccut" viewBox="0 0 280 190" style="width:100%;height:190px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block"></svg>
+        <button class="btn" onclick="drawCut()" style="margin-top:6px;border-color:var(--purple);color:var(--purple);width:100%">🔄 Animate Cut</button>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:8px">
+        <div class="ibox" style="padding:8px">
+          <h4>Cut Property (Theorem)</h4>
+          <p>For any <strong style="color:var(--accent)">cut (S, V–S)</strong> of the graph, the minimum-weight edge crossing the cut must appear in some MST.</p>
+        </div>
+        <div class="ibox" style="padding:8px">
+          <h4>Why Kruskal's is Correct</h4>
+          <p>When Kruskal's picks edge (u,v): u is in component S, v is in component V–S. This is the lightest crossing edge for that cut. By the Cut Property → it belongs in the MST. ✓</p>
+        </div>
+        <div class="ibox r" style="padding:8px">
+          <h4>In the diagram:</h4>
+          <p>Blue region = set S. Red region = V–S. Yellow edges = crossing edges. <strong style="color:var(--green)">Green edge = minimum crossing</strong> — Kruskal's always picks this one.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Counterexample -->
+  <div class="cwrap">
+    <h4>⚠️ Counterexample — Greedy WITH cycle check vs WITHOUT</h4>
+    <div class="cctrl">
+      <button class="btn" onclick="drawCex()" style="border-color:var(--purple);color:var(--purple)">▶ Show Counterexample</button>
+    </div>
+    <div class="pdemo" style="margin-top:8px">
+      <div class="pl">
+        <h4>✅ Kruskal's (with Union-Find) — Correct MST</h4>
+        <p style="font-size:11px;color:var(--muted)">Picks lightest edges, skips any that form cycles. Result: a tree.</p>
+        <svg id="cg" viewBox="0 0 240 190" style="width:100%;height:190px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block;margin-top:6px"></svg>
+        <div id="cgl" style="font-size:11px;color:var(--green);text-align:center;margin-top:4px"></div>
+      </div>
+      <div class="pr">
+        <h4>❌ Naïve Greedy (no cycle check) — WRONG</h4>
+        <p style="font-size:11px;color:var(--muted)">Adds every light edge blindly. Creates cycles → not a tree!</p>
+        <svg id="cb" viewBox="0 0 240 190" style="width:100%;height:190px;background:var(--bg);border:1px solid var(--border);border-radius:4px;display:block;margin-top:6px"></svg>
+        <div id="cbl" style="font-size:11px;color:var(--red);text-align:center;margin-top:4px"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="ibox">
+    <h4>📊 Paradigm Comparison for MST</h4>
+    <table class="ct">
+      <tr><th>Paradigm</th><th>Approach</th><th>Correct for MST?</th><th>Reason</th></tr>
+      <tr><td><strong style="color:var(--green)">Greedy — Kruskal's</strong></td><td>Min edge + cycle check</td><td style="color:var(--green)">✓ Yes</td><td>Cut Property guarantees optimality</td></tr>
+      <tr><td><strong style="color:var(--green)">Greedy — Prim's</strong></td><td>Grow from one vertex</td><td style="color:var(--green)">✓ Yes</td><td>Also exploits Cut Property</td></tr>
+      <tr><td>Naïve Greedy (no UF)</td><td>Min edge, no cycle check</td><td style="color:var(--red)">✗ Wrong</td><td>Creates cycles — not a tree</td></tr>
+      <tr><td>Divide &amp; Conquer</td><td>Not naturally applicable</td><td style="color:var(--red)">✗ No fit</td><td>MST doesn't split cleanly into subproblems</td></tr>
+      <tr><td>Dynamic Programming</td><td>No DP recurrence</td><td style="color:var(--red)">✗ Wrong fit</td><td>No overlapping subproblems in MST</td></tr>
+    </table>
+  </div>
+</div>
+</div>
+
+<!-- LEARN PAGE -->
+<div class="page" id="page-learn">
+<div class="cpg">
+  <div class="chdr">
+    <span class="cbadge" style="background:rgba(227,179,65,.15);color:var(--orange);border:1px solid var(--orange)">📖 Guide</span>
+    <div><h2 style="font-size:15px;color:var(--orange)">Kruskal's MST — Full Educational Reference</h2>
+    <p style="font-size:11px;color:var(--muted)">Algorithm overview, worked example, Union-Find detail, common mistakes</p></div>
+  </div>
+  <div class="cgrid">
+    <div class="ibox">
+      <h4>What is a Minimum Spanning Tree?</h4>
+      <p>A <strong style="color:var(--text)">spanning tree</strong> of G=(V,E) is a connected subgraph with no cycles using exactly V–1 edges. A <strong style="color:var(--text)">Minimum Spanning Tree</strong> minimizes the total edge weight among all spanning trees.</p>
+      <p style="margin-top:5px">Applications: minimum-cost network wiring, road planning, cluster analysis, image segmentation.</p>
+    </div>
+    <div class="ibox">
+      <h4>The Algorithm (Kruskal, 1956)</h4>
+      <ol style="padding-left:14px;color:var(--muted);font-size:11px;line-height:2">
+        <li>Sort all edges by weight ascending</li>
+        <li>Each vertex = its own component (MAKE-SET)</li>
+        <li>For each edge (u,v,w) lightest first:</li>
+        <li style="padding-left:14px">If FIND(u) ≠ FIND(v): add to MST, UNION(u,v)</li>
+        <li style="padding-left:14px">Else: skip (cycle)</li>
+        <li>Stop when MST has V–1 edges</li>
+      </ol>
+    </div>
+  </div>
+  <div class="ibox">
+    <h4>Worked Example: A–B:4, B–C:2, A–C:6, B–D:5, C–D:3</h4>
+    <table class="ct" style="margin-top:5px">
+      <tr><th>#</th><th>Edge</th><th>Wt</th><th>FIND(u)</th><th>FIND(v)</th><th>Decision</th><th>MST Wt</th></tr>
+      <tr><td>1</td><td>B–C</td><td>2</td><td>B</td><td>C</td><td style="color:var(--green)">✓ Add</td><td>2</td></tr>
+      <tr><td>2</td><td>C–D</td><td>3</td><td>B</td><td>D</td><td style="color:var(--green)">✓ Add</td><td>5</td></tr>
+      <tr><td>3</td><td>A–B</td><td>4</td><td>A</td><td>B</td><td style="color:var(--green)">✓ Add</td><td>9</td></tr>
+      <tr><td>4</td><td>B–D</td><td>5</td><td>A</td><td>A</td><td style="color:var(--red)">✗ Cycle</td><td>9</td></tr>
+      <tr><td>5</td><td>A–C</td><td>6</td><td>A</td><td>A</td><td style="color:var(--red)">✗ Cycle</td><td>9</td></tr>
+    </table>
+    <p style="margin-top:6px;color:var(--green);font-weight:700">MST = {B–C, C–D, A–B}, Total weight = 9</p>
+  </div>
+  <div class="cgrid">
+    <div class="ibox">
+      <h4>Union-Find Data Structure</h4>
+      <ul>
+        <li><strong style="color:var(--accent)">MAKE-SET(v)</strong>: parent[v]=v, rank[v]=0</li>
+        <li><strong style="color:var(--accent)">FIND(v)</strong>: Return root of v's set. Path compression: on every FIND, point all visited nodes directly to root.</li>
+        <li><strong style="color:var(--accent)">UNION(u,v)</strong>: Merge two sets. Union by rank: attach shorter tree under taller. Keeps max depth O(log V).</li>
+        <li>Combined: FIND and UNION both run in amortized O(α(V)) ≈ O(1)</li>
+      </ul>
+    </div>
+    <div class="ibox r">
+      <h4>⚠️ Common Mistakes</h4>
+      <ul>
+        <li><strong style="color:var(--text)">No cycle check</strong> → Creates a cyclic graph, not a tree</li>
+        <li><strong style="color:var(--text)">Directed graph</strong> → Kruskal's only works on undirected graphs</li>
+        <li><strong style="color:var(--text)">Stopping too early</strong> → Need exactly V–1 edges in MST</li>
+        <li><strong style="color:var(--text)">Confused with Prim's</strong> → Kruskal = edge-centric; Prim = vertex-centric; both give MST</li>
+        <li><strong style="color:var(--text)">Skipping sort</strong> → Produces a spanning tree but NOT the minimum one</li>
+      </ul>
+    </div>
+  </div>
+</div>
+</div>
+
+</div><!-- /right -->
+</div><!-- /app -->
+
+<script>
+// ══ PRESETS ══
+const PRESETS=[
+  {l:'Simple (4n)',    e:'A-B:4, B-C:2, A-C:6, B-D:5, C-D:3'},
+  {l:'Dense (5n)',     e:'A-B:1, A-C:8, A-D:5, A-E:3, B-C:6, B-D:2, B-E:9, C-D:7, C-E:4, D-E:10'},
+  {l:'⚠ Worst Case', e:'A-B:1, A-C:2, A-D:3, B-C:4, B-D:5, C-D:6'},
+  {l:'Road Net (6n)',  e:'A-B:7, A-C:8, B-C:3, B-D:6, C-D:4, C-E:9, D-E:2, D-F:5, E-F:1, A-F:10'},
+  {l:'Star (5n)',      e:'A-B:3, A-C:1, A-D:4, A-E:2, B-C:8, C-D:5'},
+  {l:'Path (5n)',      e:'A-B:6, B-C:2, C-D:9, D-E:1, A-C:5, B-D:4, C-E:7'},
+  {l:'Cycle+Diag(4n)',e:'A-B:5, B-C:3, C-D:6, D-A:4, A-C:2, B-D:8'},
+  {l:'Two Clusters',  e:'A-B:1, A-C:2, B-C:3, D-E:1, D-F:2, E-F:3, C-D:10, B-E:12'},
+  {l:'Textbook (9n)', e:'A-B:4, A-H:8, B-C:8, B-H:11, C-D:7, C-F:4, C-I:2, D-E:9, D-F:14, E-F:10, F-G:2, G-H:1, G-I:6, H-I:7'},
+  {l:'Tree-like (7n)',e:'A-B:2, A-C:4, B-D:3, B-E:7, C-F:5, C-G:6, D-E:8, E-F:1, F-G:9'},
+];
+(function(){const g=document.getElementById('pgrid');PRESETS.forEach((p,i)=>{const b=document.createElement('button');b.className='btn';b.textContent=p.l;b.style.fontSize='10px';b.onclick=()=>{document.getElementById('ei').value=p.e;doReset();};g.appendChild(b);});})();
+
+// ══ RANDOMIZER ══
+const DL=['Sparse','Med','Dense'],WL=['1-10','1-20','1-50'],WM=[10,20,50];
+document.getElementById('rn').oninput=function(){document.getElementById('rnv').textContent=this.value;};
+document.getElementById('rd').oninput=function(){document.getElementById('rdv').textContent=DL[this.value-1];};
+document.getElementById('rw').oninput=function(){document.getElementById('rwv').textContent=WL[this.value-1];};
+function doRandom(){
+  const n=+document.getElementById('rn').value,d=+document.getElementById('rd').value,wm=WM[+document.getElementById('rw').value-1];
+  const names='ABCDEFGHIJKLMNOPQRSTUVWXYZ'.slice(0,n).split(''),seen=new Set(),arr=[];
+  const sh=[...names].sort(()=>Math.random()-.5);
+  function ae(u,v){const k=[u,v].sort().join('-');if(!seen.has(k)){seen.add(k);arr.push(`${u}-${v}:${Math.floor(Math.random()*wm)+1}`);}}
+  for(let i=1;i<sh.length;i++)ae(sh[i-1],sh[i]);
+  const ex=d===1?n-2:d===2?Math.floor(n*1.2):n*2;
+  for(let t=0;arr.length<n-1+ex&&t<300;t++){const i=Math.floor(Math.random()*n),j=Math.floor(Math.random()*n);if(i!==j)ae(names[i],names[j]);}
+  document.getElementById('ei').value=arr.join(', ');doReset();
+}
+
+// ══ PAGE NAV ══
+function showPage(id,el){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.htab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  el.classList.add('active');
+  if(id==='clo1')drawGrowth();
+  if(id==='clo3'){drawCut();drawCex();resetGreedy();runGreedy();}
+  if(id==='clo2')runImpact();
+}
+
+// ══ PSEUDOCODE ══
+const PSEUDO=[
+  {c:'KRUSKAL(G):',t:'Entry point — G is a weighted undirected graph (V vertices, E edges).'},
+  {c:'  MST ← ∅',t:'Initialize the MST as an empty set.'},
+  {c:'  for each v ∈ G.V:',t:'Loop over all V vertices to set up Union-Find.'},
+  {c:'    MAKE-SET(v)',t:'parent[v]=v, rank[v]=0. Each vertex starts as its own component.'},
+  {c:'  sort G.E by weight ↑',t:'O(E log E) — sort edges ascending by weight. This is the dominant cost and enables the greedy selection!'},
+  {c:'  for each (u,v,w) ∈ G.E:',t:'Process edges from lightest to heaviest — greedy order.'},
+  {c:'    if FIND(u) ≠ FIND(v):',t:'Cycle check via Union-Find: are u and v in different components?'},
+  {c:'      MST ← MST ∪ {(u,v,w)}',t:'Add edge to MST — this is the greedy choice! Safe because no cycle.'},
+  {c:'      UNION(u, v)',t:'Merge the two components. Union by rank keeps trees shallow.'},
+  {c:'    else:',t:'u and v are already in the same component.'},
+  {c:'      // skip — cycle',t:'Reject this edge. It would create a cycle. Move to the next.'},
+  {c:'  return MST',t:'Done! MST has V–1 edges with minimum possible total weight.'},
+];
+(function(){const el=document.getElementById('pcode');el.innerHTML=PSEUDO.map((l,i)=>`<div class="cl" id="pl${i}"><span class="ln">${i+1}</span><span class="lc">${l.c}</span><div class="tip">${l.t}</div></div>`).join('');})();
+function hl(n){PSEUDO.forEach((_,i)=>document.getElementById('pl'+i)?.classList.remove('active'));if(n>=0){const e=document.getElementById('pl'+n);e?.classList.add('active');e?.scrollIntoView({block:'nearest',behavior:'smooth'});}}
+
+// ══ PARSE / LAYOUT ══
+function parse(s){return s.split(/[\s,;]+/).filter(Boolean).map(p=>{const m=p.match(/^([A-Za-z0-9]+)-([A-Za-z0-9]+):(\d+(\.\d+)?)$/);return m?{u:m[1].toUpperCase(),v:m[2].toUpperCase(),w:parseFloat(m[3])}:null;}).filter(Boolean);}
+function getN(el){const s=new Set();el.forEach(e=>{s.add(e.u);s.add(e.v);});return[...s].sort();}
+function layout(nl){const W=620,H=370,cx=290,cy=180,r=Math.min(140,162-nl.length*5),pos={};nl.forEach((n,i)=>{const a=(2*Math.PI*i/nl.length)-Math.PI/2;pos[n]={x:cx+r*Math.cos(a),y:cy+r*Math.sin(a)};});return pos;}
+function ms(tag){return document.createElementNS('http://www.w3.org/2000/svg',tag);}
+
+// ══ STATE ══
+let steps=[],cur=-1,playing=false,timer=null;
+let nodes={},edges=[],sEdges=[],cnt={s:0,e:0,m:0,u:0,w:0};
+let logged=new Set(),actualOps=0;
+
+// ══ BUILD STEPS ══
+function doBuild(){
+  const raw=document.getElementById('ei').value;
+  const parsed=parse(raw);
+  if(!parsed.length){alert('No valid edges. Format: A-B:4, B-C:2');return;}
+  edges=parsed;const nl=getN(edges);nodes=layout(nl);
+  cnt={s:0,e:0,m:0,u:0,w:0};steps=[];logged=new Set();clearLog();
+  const sp={},sr={};nl.forEach(n=>{sp[n]=n;sr[n]=0;});
+  function sf(v){if(sp[v]!==v)sp[v]=sf(sp[v]);return sp[v];}
+  function su(u,v){const ru=sf(u),rv=sf(v);if(ru===rv)return;if(sr[ru]<sr[rv])sp[ru]=rv;else if(sr[ru]>sr[rv])sp[rv]=ru;else{sp[rv]=ru;sr[ru]++;}}
+  steps.push({type:'init',pl:1,text:'Initialize MST=∅. Vertices: '+nl.join(', ')});
+  steps.push({type:'ms',pl:3,text:'MAKE-SET each vertex: '+nl.map(n=>`parent[${n}]=${n}`).join(', ')});
+  sEdges=[...edges].sort((a,b)=>a.w-b.w);
+  steps.push({type:'sort',pl:4,text:`Sorted ${edges.length} edges by weight: [${sEdges.map(e=>`${e.u}-${e.v}:${e.w}`).join(', ')}]`});
+  let mw=0,mc=0,ex=0;
+  sEdges.forEach((e,idx)=>{
+    ex++;const ru=sf(e.u),rv=sf(e.v);
+    steps.push({type:'check',edge:e,idx,pl:6,ru,rv,text:`Examine ${e.u}–${e.v} (w=${e.w}): FIND(${e.u})=${ru}, FIND(${e.v})=${rv} → ${ru!==rv?'Different components — safe!':'Same component — CYCLE!'}`});
+    if(ru!==rv){su(e.u,e.v);mw+=e.w;mc++;steps.push({type:'accept',edge:e,idx,pl:7,mw,mc,sp:{...sp},text:`✅ GREEDY CHOICE: Accept ${e.u}–${e.v}:${e.w}. UNION done. MST edges=${mc}, weight=${mw}`});}
+    else steps.push({type:'reject',edge:e,idx,pl:10,text:`❌ REJECT ${e.u}–${e.v}:${e.w}. Same component (root=${ru}). Adding would create a cycle.`});
+  });
+  steps.push({type:'done',pl:11,mw,mc,text:`✅ Done! MST has ${mc} edges, total weight=${mw}. (V=${nl.length}, needed V–1=${nl.length-1})`});
+  actualOps=sEdges.length*Math.log2(sEdges.length+1);
+  document.getElementById('gcact').textContent=Math.round(actualOps);
+  cur=-1;setStat('Ready');
+  renderG(new Set(),new Set(),null);renderChips(-1,new Set(),new Set());
+  document.getElementById('hbody').innerHTML='';updateCnt();updateCtr();
+  drawUF({});drawSort(-1);
+}
+
+// ══ APPLY STEP ══
+function applyStep(idx){
+  if(!steps.length)return;
+  idx=Math.max(0,Math.min(idx,steps.length-1));
+  const mst=new Set(),rej=new Set();
+  let ex=0,mw=0,mc=0,uo=0,lsp={},ai=-1,ce=null;
+  for(let i=0;i<=idx;i++){
+    const s=steps[i];
+    if(s.type==='check'){ex++;ai=s.idx;ce=s.edge;uo+=2;}
+    if(s.type==='accept'){mst.add(`${s.edge.u}-${s.edge.v}`);mw=s.mw;mc=s.mc;uo++;lsp=s.sp||lsp;ai=-1;ce=null;}
+    if(s.type==='reject'){rej.add(`${s.edge.u}-${s.edge.v}`);ai=-1;ce=null;}
+    if(s.type==='done'){ai=-1;ce=null;}
+  }
+  const s=steps[idx];
+  hl(s.pl);appendLog(idx,s);renderG(mst,rej,ce);renderChips(ai,mst,rej);drawUF(lsp);drawSort(ai);
+  cnt={s:sEdges.length,e:ex,m:mc,u:uo,w:mw};updateCnt();updateCtr();
+  addHRow(idx,s);
+}
+
+// ══ STEP LOG ══
+function appendLog(idx,s){
+  const log=document.getElementById('slog');
+  document.getElementById('lempty').style.display='none';
+  log.querySelectorAll('.le').forEach(e=>e.classList.remove('cur'));
+  const ex=document.getElementById('le'+idx);
+  if(ex){ex.classList.add('cur');ex.scrollIntoView({block:'nearest',behavior:'smooth'});return;}
+  logged.add(idx);
+  const cls=s.type==='accept'?'lacc':s.type==='reject'?'lrej':'linf';
+  const html=s.text.replace('✅','<span style="color:var(--green)">✅</span>').replace('❌','<span style="color:var(--red)">❌</span>');
+  const d=document.createElement('div');d.className=`le ${cls} cur`;d.id='le'+idx;
+  d.innerHTML=`<span class="lnum">${logged.size}</span><span class="ltxt">${html}</span>`;
+  d.onclick=()=>{cur=idx;applyStep(idx);};
+  log.appendChild(d);d.scrollIntoView({block:'nearest',behavior:'smooth'});
+}
+function clearLog(){document.getElementById('slog').innerHTML='';document.getElementById('lempty').style.display='';logged.clear();}
+
+// ══ RENDER GRAPH ══
+function renderG(mst,rej,ce){
+  const svg=document.getElementById('graph-svg');svg.innerHTML='';
+  if(!Object.keys(nodes).length)return;
+  edges.forEach(e=>{
+    const p1=nodes[e.u],p2=nodes[e.v],k=`${e.u}-${e.v}`;
+    const iM=mst.has(k)||mst.has(`${e.v}-${e.u}`),iR=rej.has(k)||rej.has(`${e.v}-${e.u}`);
+    const iC=ce&&((ce.u===e.u&&ce.v===e.v)||(ce.u===e.v&&ce.v===e.u));
+    const col=iM?'var(--green)':iC?'var(--yellow)':iR?'var(--red)':'#4a5568',sw=iM?3.5:iC?3:1.5;
+    const ln=ms('line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y);ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke',col);ln.setAttribute('stroke-width',sw);ln.style.transition='stroke .25s,stroke-width .25s';svg.appendChild(ln);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;
+    const bg=ms('rect');bg.setAttribute('x',mx-9);bg.setAttribute('y',my-9);bg.setAttribute('width',18);bg.setAttribute('height',14);bg.setAttribute('rx',3);bg.setAttribute('fill','var(--bg)');svg.appendChild(bg);
+    const wt=ms('text');wt.setAttribute('x',mx);wt.setAttribute('y',my+2);wt.setAttribute('text-anchor','middle');wt.setAttribute('font-size','11');wt.setAttribute('fill',iM?'var(--green)':iC?'var(--yellow)':'var(--muted)');wt.setAttribute('font-family','monospace');wt.textContent=e.w;svg.appendChild(wt);
+  });
+  const mn=new Set();mst.forEach(k=>{const[a,b]=k.split('-');mn.add(a);mn.add(b);});
+  Object.entries(nodes).forEach(([n,pos])=>{
+    const iM=mn.has(n);
+    const c=ms('circle');c.setAttribute('cx',pos.x);c.setAttribute('cy',pos.y);c.setAttribute('r',20);c.setAttribute('fill',iM?'#1a3a2a':'#2d333b');c.setAttribute('stroke',iM?'var(--green)':'var(--accent)');c.setAttribute('stroke-width',2);c.style.transition='fill .25s,stroke .25s';
+    const t=ms('text');t.setAttribute('x',pos.x);t.setAttribute('y',pos.y+5);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','14');t.setAttribute('font-weight','700');t.setAttribute('fill',iM?'var(--green)':'var(--text)');t.textContent=n;
+    svg.appendChild(c);svg.appendChild(t);
+  });
+}
+
+// ══ CHIPS ══
+function renderChips(ai,mst,rej){
+  const el=document.getElementById('chips');
+  if(!sEdges.length){el.innerHTML='<span style="font-size:10px;color:var(--muted)">Build steps first</span>';return;}
+  el.innerHTML=sEdges.map((e,i)=>{const k=`${e.u}-${e.v}`,iM=mst&&(mst.has(k)||mst.has(`${e.v}-${e.u}`)),iR=rej&&(rej.has(k)||rej.has(`${e.v}-${e.u}`));return`<div class="chip ${i===ai?'active':iM?'accepted':iR?'rejected':''}">${e.u}–${e.v}:${e.w}</div>`;}).join('');
+}
+
+// ══ UNION-FIND SVG ══
+function drawUF(sp){
+  const svg=document.getElementById('uf-svg');svg.innerHTML='';
+  if(!Object.keys(sp).length)return;
+  const nl=Object.keys(sp).sort(),W=480,gap=Math.min(55,W/(nl.length+1)),sx=(W-gap*(nl.length-1))/2,px={};
+  nl.forEach((n,i)=>px[n]=sx+i*gap);
+  nl.forEach(n=>{const par=sp[n];if(par!==n){const ln=ms('line');ln.setAttribute('x1',px[n]);ln.setAttribute('y1',80);ln.setAttribute('x2',px[par]);ln.setAttribute('y2',34);ln.setAttribute('stroke','var(--purple)');ln.setAttribute('stroke-width','1.5');svg.appendChild(ln);}});
+  nl.forEach(n=>{const ir=sp[n]===n,cy=ir?25:85;const c=ms('circle');c.setAttribute('cx',px[n]);c.setAttribute('cy',cy);c.setAttribute('r',12);c.setAttribute('fill',ir?'rgba(63,185,80,.2)':'#2d333b');c.setAttribute('stroke',ir?'var(--green)':'var(--purple)');c.setAttribute('stroke-width',2);const t=ms('text');t.setAttribute('x',px[n]);t.setAttribute('y',cy+4);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');t.setAttribute('font-weight','700');t.setAttribute('fill',ir?'var(--green)':'var(--text)');t.textContent=n;svg.appendChild(c);svg.appendChild(t);});
+}
+
+// ══ SORT BARS ══
+function drawSort(ai){
+  const svg=document.getElementById('sort-svg');svg.innerHTML='';
+  const arr=sEdges.length?sEdges:edges;if(!arr.length)return;
+  const W=480,bw=Math.min(40,(W-12)/arr.length-3),mx2=Math.max(...arr.map(e=>e.w));
+  arr.forEach((e,i)=>{const x=6+i*(bw+3),h=Math.max(5,(e.w/mx2)*60),y=72-h,iC=i===ai;
+    const r=ms('rect');r.setAttribute('x',x);r.setAttribute('y',y);r.setAttribute('width',bw);r.setAttribute('height',h);r.setAttribute('rx',2);r.setAttribute('fill',iC?'var(--yellow)':'rgba(88,166,255,.4)');r.style.transition='fill .2s';
+    const t=ms('text');t.setAttribute('x',x+bw/2);t.setAttribute('y',85);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','8');t.setAttribute('fill',iC?'var(--yellow)':'var(--muted)');t.textContent=`${e.u}-${e.v}:${e.w}`;
+    svg.appendChild(r);svg.appendChild(t);
+  });
+}
+
+// ══ HISTORY ══
+function addHRow(idx,s){
+  const tb=document.getElementById('hbody');tb.querySelectorAll('tr').forEach(r=>r.classList.remove('cur'));
+  if(!document.getElementById('hr'+idx)&&(s.type==='check'||s.type==='accept'||s.type==='reject')){
+    const tr=document.createElement('tr');tr.id='hr'+idx;tr.onclick=()=>{cur=idx;applyStep(idx);};
+    const res=s.type==='accept'?'✅ Add':s.type==='reject'?'❌ Cycle':'🔍 Check',cls=s.type==='accept'?'ok':s.type==='reject'?'no':'chk';
+    tr.innerHTML=`<td>${tb.children.length+1}</td><td>${s.edge?.u||''}–${s.edge?.v||''}</td><td>${s.edge?.w||''}</td><td>${s.ru||''}</td><td>${s.rv||''}</td><td class="${cls}">${res}</td>`;
+    if(tb.children.length>=30)tb.removeChild(tb.firstChild);tb.appendChild(tr);
+  }
+  document.getElementById('hr'+idx)?.classList.add('cur');document.getElementById('hr'+idx)?.scrollIntoView({block:'nearest'});
+}
+
+// ══ PLAYBACK ══
+function doStep(){if(!steps.length){doBuild();return;}cur=Math.min(cur+1,steps.length-1);applyStep(cur);setStat(cur>=steps.length-1?'Done':'Paused');}
+function doPlay(){
+  if(!steps.length){doBuild();return;}if(playing)return;playing=true;setStat('Playing');
+  function tick(){if(!playing||cur>=steps.length-1){playing=false;setStat(cur>=steps.length-1?'Done':'Paused');return;}cur++;applyStep(cur);timer=setTimeout(tick,800/getSpd());}tick();
+}
+function doPause(){playing=false;clearTimeout(timer);setStat('Paused');}
+function doReset(){
+  doPause();cur=-1;steps=[];cnt={s:0,e:0,m:0,u:0,w:0};clearLog();
+  document.getElementById('hbody').innerHTML='';document.getElementById('chips').innerHTML='';
+  renderG(new Set(),new Set(),null);hl(-1);
+  document.getElementById('uf-svg').innerHTML='';document.getElementById('sort-svg').innerHTML='';
+  updateCnt();updateCtr();setStat('Idle');
+}
+function getSpd(){const v=+document.getElementById('spd').value;return[.25,.5,.75,1,1.25,1.5,2,2.5,3,3.5,4,4.5,5,6,7,8][v-1]||1;}
+document.getElementById('spd').oninput=function(){document.getElementById('spdl').textContent=getSpd().toFixed(2).replace(/\.?0+$/,'')+'×';};
+function setStat(s){const el=document.getElementById('sstat');el.textContent=s;const c={Idle:'var(--muted)',Ready:'var(--accent)',Playing:'var(--green)',Paused:'var(--yellow)',Done:'var(--orange)'};el.style.color=c[s]||'var(--muted)';}
+function updateCtr(){document.getElementById('sctr').textContent=steps.length?`${Math.max(0,cur+1)} / ${steps.length}`:'0 / 0';}
+function updateCnt(){['s','e','m','u'].forEach(k=>document.getElementById('c'+k).textContent=cnt[k]);document.getElementById('cw').textContent=cnt.w;}
+function bTab(n,el){document.querySelectorAll('.bpane').forEach(p=>p.classList.remove('active'));document.querySelectorAll('.btab').forEach(t=>t.classList.remove('active'));document.getElementById('bp-'+n).classList.add('active');el.classList.add('active');}
+
+// ══ CLO-1: GROWTH CHART ══
+function drawGrowth(){
+  const svg=document.getElementById('gsvg');svg.innerHTML='';
+  const maxV=+document.getElementById('gcv').value,type=document.getElementById('gct').value;
+  const W=680,H=210,pd=40,pk=[],pp=[],pn=[];
+  for(let v=2;v<=maxV;v++){const E=type==='dense'?v*(v-1)/2:v;pk.push({x:v,y:E*Math.log2(E+1)});pp.push({x:v,y:type==='dense'?v*v:v*Math.log2(v+1)});pn.push({x:v,y:E*E});}
+  const mY=Math.max(...pn.map(p=>p.y),...pp.map(p=>p.y));
+  const sx=(W-2*pd)/maxV,sy=(H-2*pd)/(mY||1);
+  function dpath(pts,col,dash){const p=ms('path');p.setAttribute('d',pts.map((pt,i)=>`${i===0?'M':'L'}${pd+pt.x*sx},${H-pd-pt.y*sy}`).join(' '));p.setAttribute('fill','none');p.setAttribute('stroke',col);p.setAttribute('stroke-width','2');if(dash)p.setAttribute('stroke-dasharray','5,3');svg.appendChild(p);}
+  dpath(pk,'var(--green)');dpath(pp,'var(--red)');dpath(pn,'var(--yellow)');
+  if(actualOps>0){
+    const V=getN(edges).length,E=sEdges.length||edges.length,ay=E*Math.log2(E+1);
+    const dx=pd+V*sx,dy=H-pd-Math.min(ay,mY)*sy;
+    if(dx>=pd&&dx<=W-pd&&dy>=pd&&dy<=H-pd){const d=ms('circle');d.setAttribute('cx',dx);d.setAttribute('cy',dy);d.setAttribute('r',5);d.setAttribute('fill','var(--teal)');d.setAttribute('stroke','var(--bg)');d.setAttribute('stroke-width','2');svg.appendChild(d);}
+  }
+  const ax=ms('line');ax.setAttribute('x1',pd);ax.setAttribute('y1',H-pd);ax.setAttribute('x2',W-pd);ax.setAttribute('y2',H-pd);ax.setAttribute('stroke','var(--border)');svg.appendChild(ax);
+  const ay2=ms('line');ay2.setAttribute('x1',pd);ay2.setAttribute('y1',pd);ay2.setAttribute('x2',pd);ay2.setAttribute('y2',H-pd);ay2.setAttribute('stroke','var(--border)');svg.appendChild(ay2);
+  for(let v=5;v<=maxV;v+=5){const t=ms('text');t.setAttribute('x',pd+v*sx);t.setAttribute('y',H-pd+13);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','9');t.setAttribute('fill','var(--muted)');t.textContent=v;svg.appendChild(t);}
+  const xl=ms('text');xl.setAttribute('x',W/2);xl.setAttribute('y',H-1);xl.setAttribute('text-anchor','middle');xl.setAttribute('font-size','9');xl.setAttribute('fill','var(--muted)');xl.textContent='V (nodes)';svg.appendChild(xl);
+}
+
+// ══ CLO-2: IMPACT DEMO ══
+function kruskal(eList,nl){
+  const sp={},sr={};nl.forEach(n=>{sp[n]=n;sr[n]=0;});
+  function sf(v){if(sp[v]!==v)sp[v]=sf(sp[v]);return sp[v];}
+  function su(u,v){const ru=sf(u),rv=sf(v);if(ru===rv)return;if(sr[ru]<sr[rv])sp[ru]=rv;else if(sr[ru]>sr[rv])sp[rv]=ru;else{sp[rv]=ru;sr[ru]++;}}
+  const mst=[];let w=0;eList.forEach(e=>{if(sf(e.u)!==sf(e.v)){mst.push(`${e.u}-${e.v}`);w+=e.w;su(e.u,e.v);}});
+  return{mst:new Set(mst),w};
+}
+function drawSmallGraph(svgId,eList,pos,mstSet,bad){
+  const svg=document.getElementById(svgId);svg.innerHTML='';
+  eList.forEach(e=>{
+    const p1=pos[e.u],p2=pos[e.v],k=`${e.u}-${e.v}`,iM=mstSet.has(k)||mstSet.has(`${e.v}-${e.u}`);
+    const ln=ms('line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y);ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke',iM?(bad?'var(--red)':'var(--green)'):'#4a5568');ln.setAttribute('stroke-width',iM?3:1.5);if(bad&&iM)ln.setAttribute('stroke-dasharray','5,2');svg.appendChild(ln);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2;const t=ms('text');t.setAttribute('x',mx);t.setAttribute('y',my-3);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');t.setAttribute('fill',iM?(bad?'var(--red)':'var(--green)'):'var(--muted)');t.textContent=e.w;svg.appendChild(t);
+  });
+  const allN=new Set();eList.forEach(e=>{allN.add(e.u);allN.add(e.v);});
+  allN.forEach(n=>{const p=pos[n],iM=[...mstSet].some(k=>k.split('-').includes(n));const c=ms('circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',16);c.setAttribute('fill',iM&&!bad?'#1a3a2a':'#2d333b');c.setAttribute('stroke',bad?'var(--red)':'var(--accent)');c.setAttribute('stroke-width',2);const t=ms('text');t.setAttribute('x',p.x);t.setAttribute('y',p.y+5);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','12');t.setAttribute('font-weight','700');t.setAttribute('fill','var(--text)');t.textContent=n;svg.appendChild(c);svg.appendChild(t);});
+}
+function runImpact(){
+  const de=[{u:'A',v:'B',w:8},{u:'A',v:'C',w:2},{u:'B',v:'C',w:5},{u:'B',v:'D',w:3},{u:'C',v:'D',w:9}];
+  const nl=['A','B','C','D'],pos={A:{x:55,y:55},B:{x:220,y:55},C:{x:55,y:155},D:{x:220,y:155}};
+  const good=kruskal([...de].sort((a,b)=>a.w-b.w),nl);
+  drawSmallGraph('ig',de,pos,good.mst,false);
+  document.getElementById('igwt').textContent=`MST weight = ${good.w} — MINIMUM ✓`;
+  const bad=kruskal(de,nl);
+  drawSmallGraph('ib',de,pos,bad.mst,true);
+  document.getElementById('ibwt').textContent=`Spanning tree weight = ${bad.w}${bad.w>good.w?' — NOT minimum ✗':' — same (lucky)'}`;
+  const diff=bad.w-good.w;
+  document.getElementById('iccl').textContent=diff>0
+    ?`⚠️ Without sorting, the algorithm picked edges in input order and produced weight ${bad.w} — that's ${diff} more than the true MST weight of ${good.w}. Sorting ensures the greedy choice is always the globally lightest safe edge.`
+    :`On this graph both orders happen to agree — but in general skipping the sort produces heavier spanning trees. Try changing the edge input order and re-running.`;
+}
+
+// ══ CLO-3: GREEDY DEMO ══
+const GD={edges:[{u:'A',v:'B',w:4},{u:'A',v:'C',w:6},{u:'B',v:'C',w:2},{u:'B',v:'D',w:5},{u:'C',v:'D',w:3}],nl:['A','B','C','D'],pos:{A:{x:75,y:75},B:{x:210,y:75},C:{x:75,y:165},D:{x:210,y:165}}};
+let gtimer=null;
+function drawGGraph(svgId,mst,rej,ce){
+  const svg=document.getElementById(svgId);svg.innerHTML='';
+  GD.edges.forEach(e=>{
+    const p1=GD.pos[e.u],p2=GD.pos[e.v],k=`${e.u}-${e.v}`,iM=mst.has(k)||mst.has(`${e.v}-${e.u}`),iR=rej.has(k)||rej.has(`${e.v}-${e.u}`),iC=ce&&((ce.u===e.u&&ce.v===e.v)||(ce.u===e.v&&ce.v===e.u));
+    const col=iM?'var(--green)':iC?'var(--yellow)':iR?'var(--red)':'#4a5568',sw=iM||iC?3:1.5;
+    const ln=ms('line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y);ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke',col);ln.setAttribute('stroke-width',sw);svg.appendChild(ln);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2,t=ms('text');t.setAttribute('x',mx);t.setAttribute('y',my-3);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');t.setAttribute('fill',iM?'var(--green)':iC?'var(--yellow)':'var(--muted)');t.textContent=e.w;svg.appendChild(t);
+  });
+  const mn=new Set();mst.forEach(k=>{const[a,b]=k.split('-');mn.add(a);mn.add(b);});
+  GD.nl.forEach(n=>{const p=GD.pos[n],iM=mn.has(n);const c=ms('circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',17);c.setAttribute('fill',iM?'#1a3a2a':'#2d333b');c.setAttribute('stroke',iM?'var(--green)':'var(--accent)');c.setAttribute('stroke-width',2);const t=ms('text');t.setAttribute('x',p.x);t.setAttribute('y',p.y+5);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','13');t.setAttribute('font-weight','700');t.setAttribute('fill',iM?'var(--green)':'var(--text)');t.textContent=n;svg.appendChild(c);svg.appendChild(t);});
+}
+function resetGreedy(){clearTimeout(gtimer);drawGGraph('gsvg2',new Set(),new Set(),null);document.getElementById('glog').innerHTML='';document.getElementById('gmsg').textContent='Click to animate each greedy choice.';}
+function runGreedy(){
+  clearTimeout(gtimer);
+  const sorted=[...GD.edges].sort((a,b)=>a.w-b.w);
+  const sp={},sr={};GD.nl.forEach(n=>{sp[n]=n;sr[n]=0;});
+  function sf(v){if(sp[v]!==v)sp[v]=sf(sp[v]);return sp[v];}
+  function su(u,v){const ru=sf(u),rv=sf(v);if(ru===rv)return;if(sr[ru]<sr[rv])sp[ru]=rv;else if(sr[ru]>sr[rv])sp[rv]=ru;else{sp[rv]=ru;sr[ru]++;}}
+  const decisions=[];sorted.forEach(e=>{const ru=sf(e.u),rv=sf(e.v),ok=ru!==rv;if(ok)su(e.u,e.v);decisions.push({e,ok,ru,rv});});
+  const mst=new Set(),rej=new Set();const log=document.getElementById('glog');log.innerHTML='';let idx=0;
+  function tick(){
+    if(idx>=decisions.length){
+      const tw=[...mst].reduce((s,k)=>{const e=GD.edges.find(e=>`${e.u}-${e.v}`===k||`${e.v}-${e.u}`===k);return s+(e?e.w:0);},0);
+      document.getElementById('gmsg').textContent=`✅ MST complete! Total weight = ${tw}. Made ${mst.size} greedy accepts, ${rej.size} cycle rejections.`;
+      drawGGraph('gsvg2',mst,rej,null);return;
+    }
+    const d=decisions[idx];
+    if(d.ok)mst.add(`${d.e.u}-${d.e.v}`);else rej.add(`${d.e.u}-${d.e.v}`);
+    drawGGraph('gsvg2',mst,rej,d.e);
+    document.getElementById('gmsg').textContent=d.ok?`Greedy choice #${mst.size}: Add ${d.e.u}–${d.e.v} (w=${d.e.w}). Lightest edge connecting two different components.`:`Skip ${d.e.u}–${d.e.v} (w=${d.e.w}). FIND(${d.e.u})=FIND(${d.e.v})=${d.ru}. Same component → cycle!`;
+    const div=document.createElement('div');div.className=`le ${d.ok?'lacc':'lrej'}`;
+    div.innerHTML=`<span class="lnum">${idx+1}</span><span class="ltxt">${d.ok?'<span style="color:var(--green)">✅ Add</span>':'<span style="color:var(--red)">❌ Skip</span>'} <strong>${d.e.u}–${d.e.v}</strong> w=${d.e.w} | FIND(${d.e.u})=${d.ru}, FIND(${d.e.v})=${d.rv}</span>`;
+    log.appendChild(div);div.scrollIntoView({block:'nearest',behavior:'smooth'});
+    idx++;gtimer=setTimeout(tick,1100);
+  }
+  setTimeout(tick,300);
+}
+
+// ══ CLO-3: CUT PROPERTY ══
+function drawCut(){
+  const svg=document.getElementById('ccut');svg.innerHTML='';
+  const pos={A:{x:65,y:60},B:{x:170,y:40},C:{x:65,y:155},D:{x:170,y:140},E:{x:250,y:95}};
+  const all=[{u:'A',v:'B',w:4},{u:'A',v:'C',w:2},{u:'B',v:'C',w:7},{u:'B',v:'D',w:3},{u:'B',v:'E',w:8},{u:'D',v:'E',w:1},{u:'C',v:'D',w:5}];
+  const S=new Set(['A','C']),VS=new Set(['B','D','E']);
+  const cross=all.filter(e=>(S.has(e.u)&&VS.has(e.v))||(VS.has(e.u)&&S.has(e.v)));
+  const minC=cross.reduce((mn,e)=>e.w<mn.w?e:mn,cross[0]);
+  const e1=ms('ellipse');e1.setAttribute('cx',68);e1.setAttribute('cy',110);e1.setAttribute('rx',52);e1.setAttribute('ry',75);e1.setAttribute('fill','rgba(88,166,255,.07)');e1.setAttribute('stroke','rgba(88,166,255,.3)');e1.setAttribute('stroke-dasharray','4,3');svg.appendChild(e1);
+  const e2=ms('ellipse');e2.setAttribute('cx',205);e2.setAttribute('cy',95);e2.setAttribute('rx',70);e2.setAttribute('ry',70);e2.setAttribute('fill','rgba(248,81,73,.06)');e2.setAttribute('stroke','rgba(248,81,73,.25)');e2.setAttribute('stroke-dasharray','4,3');svg.appendChild(e2);
+  const sl=ms('text');sl.setAttribute('x',25);sl.setAttribute('y',16);sl.setAttribute('font-size','11');sl.setAttribute('fill','var(--accent)');sl.setAttribute('font-weight','700');sl.textContent='S';svg.appendChild(sl);
+  const sl2=ms('text');sl2.setAttribute('x',260);sl2.setAttribute('y',16);sl2.setAttribute('font-size','11');sl2.setAttribute('fill','var(--red)');sl2.setAttribute('font-weight','700');sl2.textContent='V–S';svg.appendChild(sl2);
+  all.forEach(e=>{
+    const p1=pos[e.u],p2=pos[e.v];
+    const isMin=(e.u===minC.u&&e.v===minC.v)||(e.u===minC.v&&e.v===minC.u);
+    const isCross=cross.some(c=>(c.u===e.u&&c.v===e.v)||(c.u===e.v&&c.v===e.u));
+    const ln=ms('line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y);ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke',isMin?'var(--green)':isCross?'var(--yellow)':'#4a5568');ln.setAttribute('stroke-width',isMin?3:1.5);svg.appendChild(ln);
+    const mx=(p1.x+p2.x)/2,my=(p1.y+p2.y)/2,t=ms('text');t.setAttribute('x',mx);t.setAttribute('y',my-3);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');t.setAttribute('fill',isMin?'var(--green)':isCross?'var(--yellow)':'var(--muted)');t.textContent=e.w;svg.appendChild(t);
+  });
+  Object.entries(pos).forEach(([n,p])=>{const inS=S.has(n);const c=ms('circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',15);c.setAttribute('fill',inS?'rgba(88,166,255,.12)':'rgba(248,81,73,.08)');c.setAttribute('stroke',inS?'var(--accent)':'var(--red)');c.setAttribute('stroke-width',2);const t=ms('text');t.setAttribute('x',p.x);t.setAttribute('y',p.y+4);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('fill',inS?'var(--accent)':'var(--red)');t.textContent=n;svg.appendChild(c);svg.appendChild(t);});
+  const mp1=pos[minC.u],mp2=pos[minC.v],lx=(mp1.x+mp2.x)/2,ly=(mp1.y+mp2.y)/2;
+  const lbl=ms('text');lbl.setAttribute('x',lx+4);lbl.setAttribute('y',ly+13);lbl.setAttribute('font-size','9');lbl.setAttribute('fill','var(--green)');lbl.textContent='← min crossing';svg.appendChild(lbl);
+}
+
+// ══ CLO-3: COUNTEREXAMPLE ══
+function drawCex(){
+  const ce=[{u:'A',v:'B',w:1},{u:'B',v:'C',w:2},{u:'C',v:'A',w:3},{u:'A',v:'D',w:4}];
+  const nl=['A','B','C','D'],pos={A:{x:120,y:95},B:{x:50,y:165},C:{x:190,y:165},D:{x:120,y:35}};
+  const good=kruskal([...ce].sort((a,b)=>a.w-b.w),nl);
+  drawCexG('cg',ce,pos,good.mst,false);document.getElementById('cgl').textContent=`MST weight=${good.w}. V–1=${nl.length-1} edges. Tree ✓`;
+  const badMST=new Set();[...ce].sort((a,b)=>a.w-b.w).forEach(e=>badMST.add(`${e.u}-${e.v}`));
+  drawCexG('cb',ce,pos,badMST,true);document.getElementById('cbl').textContent=`All edges added — cycle A→B→C→A exists! Not a tree ✗`;
+}
+function drawCexG(id,eList,pos,mst,bad){
+  const svg=document.getElementById(id);svg.innerHTML='';
+  eList.forEach(e=>{const p1=pos[e.u],p2=pos[e.v],k=`${e.u}-${e.v}`,iM=mst.has(k)||mst.has(`${e.v}-${e.u}`);const ln=ms('line');ln.setAttribute('x1',p1.x);ln.setAttribute('y1',p1.y);ln.setAttribute('x2',p2.x);ln.setAttribute('y2',p2.y);ln.setAttribute('stroke',iM?(bad?'var(--red)':'var(--green)'):'#4a5568');ln.setAttribute('stroke-width',iM?3:1.5);if(bad&&iM)ln.setAttribute('stroke-dasharray','5,2');svg.appendChild(ln);const t=ms('text');t.setAttribute('x',(p1.x+p2.x)/2);t.setAttribute('y',(p1.y+p2.y)/2-3);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','10');t.setAttribute('fill',iM?(bad?'var(--red)':'var(--green)'):'var(--muted)');t.textContent=e.w;svg.appendChild(t);});
+  const an=new Set();eList.forEach(e=>{an.add(e.u);an.add(e.v);});an.forEach(n=>{const p=pos[n];const c=ms('circle');c.setAttribute('cx',p.x);c.setAttribute('cy',p.y);c.setAttribute('r',15);c.setAttribute('fill','#2d333b');c.setAttribute('stroke',bad?'var(--red)':'var(--accent)');c.setAttribute('stroke-width',2);const t=ms('text');t.setAttribute('x',p.x);t.setAttribute('y',p.y+5);t.setAttribute('text-anchor','middle');t.setAttribute('font-size','11');t.setAttribute('font-weight','700');t.setAttribute('fill','var(--text)');t.textContent=n;svg.appendChild(c);svg.appendChild(t);});
+  if(bad){const w=ms('text');w.setAttribute('x',120);w.setAttribute('y',185);w.setAttribute('text-anchor','middle');w.setAttribute('font-size','10');w.setAttribute('fill','var(--red)');w.setAttribute('font-weight','700');w.textContent='⚠ CYCLE: A→B→C→A!';svg.appendChild(w);}
+}
+
+// ══ INIT ══
+drawGrowth();drawCut();drawCex();resetGreedy();runImpact();
+setTimeout(()=>doBuild(),300);
+</script>
+</body>
+</html>
